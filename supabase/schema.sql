@@ -261,3 +261,43 @@ create policy "Admins can manage settings" on public.settings for all
 -- update auth.users
 --   set raw_user_meta_data = raw_user_meta_data || '{"role":"admin"}'
 --   where id = '<your-uuid>';
+
+
+-- ── RLS: Users can read their own orders ────────────────────────
+-- (In addition to admin policy already set)
+create policy "Users can view their own orders"
+  on public.orders for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own orders"
+  on public.orders for insert
+  with check (auth.uid() = user_id OR user_id IS NULL);
+
+
+-- ── increment_coupon_use RPC function ───────────────────────────
+-- Called by the Stripe webhook to safely increment used_count
+create or replace function public.increment_coupon_use(code text)
+returns void language plpgsql security definer as $$
+begin
+  update public.coupons
+  set used_count = used_count + 1
+  where coupons.code = increment_coupon_use.code;
+end;
+$$;
+
+
+-- ── generate_order_number helper (optional, used if generating server-side) ──
+create or replace function public.next_order_number()
+returns text language plpgsql security definer as $$
+declare
+  today text := to_char(now(), 'YYYYMMDD');
+  seq   int;
+  result text;
+begin
+  select count(*) + 1 into seq
+  from public.orders
+  where created_at::date = current_date;
+  result := 'PYV-' || today || '-' || lpad(seq::text, 4, '0');
+  return result;
+end;
+$$;
