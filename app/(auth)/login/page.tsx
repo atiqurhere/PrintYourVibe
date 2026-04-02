@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
@@ -124,5 +124,13 @@ export default function LoginPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="animate-fade-in-up w-full text-center text-cream-muted">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
