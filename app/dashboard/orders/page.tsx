@@ -1,64 +1,90 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ShoppingBag, Package } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, formatDateShort } from "@/lib/utils";
-import type { OrderStatus } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
+import { db } from "@/lib/supabase/queries";
+import type { Order } from "@/lib/supabase/queries";
 
-const ORDERS = [
-  { id: "ord-1", number: "PYV-12345", product: "Classic Premium Tee",        status: "dispatched" as OrderStatus, date: "2026-03-31", total: 23.98, items: 1 },
-  { id: "ord-2", number: "PYV-12301", product: "Heavyweight Hoodie",          status: "delivered"  as OrderStatus, date: "2026-03-15", total: 45.99, items: 1 },
-  { id: "ord-3", number: "PYV-12289", product: "Canvas Tote Bag",             status: "delivered"  as OrderStatus, date: "2026-03-01", total: 16.98, items: 2 },
-  { id: "ord-4", number: "PYV-12210", product: "Classic Crewneck Sweatshirt", status: "cancelled"  as OrderStatus, date: "2026-02-14", total: 34.99, items: 1 },
-];
+export default function DashboardOrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const STATUS_TABS: (OrderStatus | "all")[] = ["all", "pending", "dispatched", "delivered", "cancelled"];
+  useEffect(() => {
+    async function load() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
 
-export default function OrdersPage() {
-  const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all");
-  const filtered = activeTab === "all" ? ORDERS : ORDERS.filter((o) => o.status === activeTab);
+      const { data } = await db
+        .from("orders")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      setOrders((data ?? []) as Order[]);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-dark-elevated rounded-xl w-48 mb-6" />
+        {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-dark-elevated rounded-2xl" />)}
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 className="font-display font-bold text-3xl text-cream mb-6">My Orders</h1>
-      {/* Status tabs */}
-      <div className="flex gap-1 border-b border-gold/10 mb-6">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-3 text-xs font-label uppercase tracking-widest transition-colors relative capitalize ${activeTab === tab ? "text-gold" : "text-cream-faint hover:text-cream"}`}
-          >
-            {tab}
-            {activeTab === tab && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold rounded-full" />}
-          </button>
-        ))}
+      <div className="mb-8">
+        <h1 className="font-display font-bold text-3xl text-cream">My Orders</h1>
+        <p className="text-cream-muted mt-1 text-sm">Track and manage all your PrintYourVibe orders.</p>
       </div>
 
-      <div className="space-y-3">
-        {filtered.length === 0 && (
-          <p className="text-cream-muted py-10 text-center">No orders found.</p>
-        )}
-        {filtered.map((order) => (
-          <Link
-            key={order.id}
-            href={`/dashboard/orders/${order.id}`}
-            className="flex items-center gap-4 p-5 bg-dark-card border border-gold/10 rounded-2xl hover:border-gold/30 transition-all group"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <span className="font-heading font-semibold text-cream group-hover:text-gold transition-colors">{order.number}</span>
-                <Badge variant={order.status}>{order.status}</Badge>
-              </div>
-              <p className="text-sm text-cream-muted">{order.product} · {order.items} item{order.items > 1 ? "s" : ""}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="font-heading font-semibold text-cream">{formatPrice(order.total)}</p>
-              <p className="font-label text-[10px] text-cream-faint mt-1">{formatDateShort(order.date)}</p>
-            </div>
+      {orders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-dark-card border border-gold/10 rounded-2xl">
+          <ShoppingBag size={48} className="text-gold/20 mb-4" />
+          <h2 className="font-heading text-xl text-cream mb-2">No orders yet</h2>
+          <p className="text-cream-muted text-sm mb-6">Start by browsing our collection and customising a product.</p>
+          <Link href="/products" className="flex items-center gap-2 text-sm text-gold hover:text-gold-light transition-colors">
+            Browse Products <ArrowRight size={14} />
           </Link>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {orders.map((order) => (
+            <Link
+              key={order.id}
+              href={`/dashboard/orders/${order.id}`}
+              className="flex items-center justify-between p-5 bg-dark-card border border-gold/10 rounded-2xl hover:border-gold/30 transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-dark-elevated border border-gold/10 flex items-center justify-center shrink-0">
+                  <Package size={18} className="text-gold/50" />
+                </div>
+                <div>
+                  <p className="font-heading text-sm text-cream font-semibold group-hover:text-gold transition-colors">{order.number}</p>
+                  <p className="font-label text-[10px] text-cream-faint uppercase tracking-wide mt-0.5">
+                    {order.items?.[0]?.productName || "Custom Order"}
+                    {order.items?.length > 1 ? ` + ${order.items.length - 1} more` : ""}
+                    {" · "}
+                    {formatDateShort(order.created_at)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Badge variant={order.status as any}>{order.status}</Badge>
+                <span className="font-heading font-semibold text-cream">{formatPrice(order.total_pence / 100)}</span>
+                <ArrowRight size={14} className="text-cream-faint group-hover:text-gold transition-colors" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

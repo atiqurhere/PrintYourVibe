@@ -8,7 +8,8 @@ import {
   Layers, GripVertical, ArrowUp, ArrowDown, AlignCenter,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { products, categories } from "@/lib/mock-data";
+import { getProducts } from "@/lib/supabase/queries";
+import type { Product } from "@/lib/supabase/queries";
 import { useMockupStore, type DesignLayer } from "@/stores/useMockupStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { formatPrice } from "@/lib/utils";
@@ -105,25 +106,43 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
   const [textSize, setTextSize] = useState(32);
   const [isFileDragging, setIsFileDragging] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ w: 500, h: 500 });
-  // Snap guides: null = none, 'x' = vertical line, 'y' = horizontal line, 'xy' = both
   const [snapGuide, setSnapGuide] = useState<{ x: boolean; y: boolean }>({ x: false, y: false });
+
+  // ── Products from Supabase ──────────────────────────────────────────────────
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    getProducts().then((ps) => {
+      setProducts(ps);
+      setProductsLoading(false);
+      // Set initial product if none selected
+      if (ps.length > 0 && !store.productId) {
+        const target = initialProductSlug ? ps.find((p) => p.slug === initialProductSlug) : ps[0];
+        const p = target || ps[0];
+        if (p?.colours?.[0]) store.setProduct(p.id, p.colours[0].id);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Set product from slug when products load
+  useEffect(() => {
+    if (initialProductSlug && products.length > 0) {
+      const p = products.find((pr) => pr.slug === initialProductSlug);
+      if (p?.colours?.[0]) store.setProduct(p.id, p.colours[0].id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProductSlug, products]);
 
   // ── Product / colour / print area ──────────────────────────────────────────
   const currentProduct = products.find((p) => p.id === store.productId) || products[0];
-  const currentColour = currentProduct.colours.find((c) => c.id === store.colourId) || currentProduct.colours[0];
-  const printArea = currentProduct.print_area[store.side];
+  const currentColour = currentProduct?.colours?.find((c) => c.id === store.colourId) || currentProduct?.colours?.[0];
+  const printArea = currentProduct?.print_area?.[store.side] || { x: 130, y: 80, w: 240, h: 280 };
   const baseImage = store.side === "front"
-    ? currentColour.mockup_front_url
-    : (currentColour.mockup_back_url || currentColour.mockup_front_url);
+    ? currentColour?.mockup_front_url || ""
+    : (currentColour?.mockup_back_url || currentColour?.mockup_front_url || "");
 
-  // Set initial product from slug
-  useEffect(() => {
-    if (initialProductSlug) {
-      const p = products.find((pr) => pr.slug === initialProductSlug);
-      if (p) store.setProduct(p.id, p.colours[0].id);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProductSlug]);
 
   // ── Scale: print area coordinates → canvas pixels ─────────────────────────
   const scale = canvasSize.w / 500;
@@ -603,6 +622,7 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
 
   // ── Add to cart ───────────────────────────────────────────────────────────
   const handleAddToCart = () => {
+    if (!currentColour) return;
     addToCart({
       id: `${currentProduct.id}-${currentColour.id}-${store.selectedSize}-${Date.now()}`,
       productId: currentProduct.id,
@@ -619,6 +639,17 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
   };
 
   const selectedLayer = store.layers.find((l) => l.id === store.selectedLayerId);
+
+  if (productsLoading || !currentProduct) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-dark pt-16 items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full border-2 border-gold/30 border-t-gold animate-spin mx-auto mb-4" />
+          <p className="text-cream-muted text-sm">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-dark pt-16">
@@ -801,22 +832,25 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
               <div>
                 <p className="font-label text-[11px] uppercase tracking-widest text-cream-faint mb-3">Category</p>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => {
-                    const catProducts = products.filter((p) => p.category_id === cat.id);
-                    const isActive = catProducts.some((p) => p.id === store.productId);
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          const first = catProducts[0];
-                          if (first) store.setProduct(first.id, first.colours[0].id);
-                        }}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-label transition-all ${isActive ? "border-gold bg-gold/15 text-gold" : "border-gold/15 text-cream-muted hover:border-gold/35 hover:text-cream"}`}
-                      >
-                        {cat.name}
-                      </button>
-                    );
-                  })}
+                  {/* Derive unique categories from loaded products */}
+                  {Array.from(new Map(products.map((p) => [p.category_id, p.category_name])).entries())
+                    .filter(([catId]) => catId)
+                    .map(([catId, catName]) => {
+                      const catProducts = products.filter((p) => p.category_id === catId);
+                      const isActive = catProducts.some((p) => p.id === store.productId);
+                      return (
+                        <button
+                          key={catId}
+                          onClick={() => {
+                            const first = catProducts[0];
+                            if (first) store.setProduct(first.id, first.colours?.[0]?.id || "");
+                          }}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-label transition-all ${isActive ? "border-gold bg-gold/15 text-gold" : "border-gold/15 text-cream-muted hover:border-gold/35 hover:text-cream"}`}
+                        >
+                          {catName}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -829,11 +863,11 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
                     .map((product) => (
                       <button
                         key={product.id}
-                        onClick={() => store.setProduct(product.id, product.colours[0].id)}
+                        onClick={() => store.setProduct(product.id, product.colours?.[0]?.id || "")}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${store.productId === product.id ? "border-gold/40 bg-gold/8" : "border-gold/10 hover:border-gold/25 hover:bg-dark-elevated"}`}
                       >
                         <div className="w-10 h-10 rounded-lg overflow-hidden bg-dark-elevated shrink-0">
-                          <Image src={product.colours[0].mockup_front_url} alt={product.name} width={40} height={40} className="object-contain w-full h-full p-1" />
+                          <Image src={product.colours?.[0]?.mockup_front_url || ""} alt={product.name} width={40} height={40} className="object-contain w-full h-full p-1" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-heading text-xs text-cream font-semibold truncate">{product.name}</p>
@@ -850,10 +884,10 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
               {/* Colour swatches */}
               <div>
                 <p className="font-label text-[11px] uppercase tracking-widest text-cream-faint mb-3">
-                  Colour — <span className="text-cream">{currentColour.name}</span>
+                  Colour — <span className="text-cream">{currentColour?.name}</span>
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  {currentProduct.colours.map((c) => (
+                  {currentProduct.colours?.map((c) => (
                     <button
                       key={c.id}
                       onClick={() => store.setColour(c.id)}
@@ -869,7 +903,7 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
               <div>
                 <p className="font-label text-[11px] uppercase tracking-widest text-cream-faint mb-3">Size</p>
                 <div className="flex flex-wrap gap-2">
-                  {currentProduct.available_sizes.map((s) => (
+                  {currentProduct.available_sizes?.map((s) => (
                     <button
                       key={s.label}
                       onClick={() => store.setSelectedSize(s.label)}
@@ -1094,7 +1128,7 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
                   <div>
                     <p className="font-heading text-sm text-cream font-semibold">{currentProduct.name}</p>
                     <p className="font-label text-[10px] text-cream-faint uppercase mt-0.5">
-                      {currentColour.name} · Size {store.selectedSize}
+                      {currentColour?.name} · Size {store.selectedSize}
                     </p>
                   </div>
                   <span className="font-heading font-bold text-lg text-cream">{formatPrice(currentProduct.base_price)}</span>

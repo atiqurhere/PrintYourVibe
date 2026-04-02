@@ -17,18 +17,33 @@ export default function CartPage() {
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
 
-  const handleCoupon = () => {
-    if (couponInput.toUpperCase() === "PYV10") {
-      applyCoupon({ code: "PYV10", type: "percent", value: 10 });
-      setCouponError("");
-    } else if (couponInput.toUpperCase() === "SAVE5") {
-      applyCoupon({ code: "SAVE5", type: "fixed", value: 5 });
-      setCouponError("");
-    } else {
-      setCouponError("Invalid or expired coupon code.");
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  const handleCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/validate-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput.trim(), subtotalPence: Math.round(subtotal() * 100) }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        applyCoupon({ code: data.code, type: data.type, value: data.value });
+        setCouponError("");
+      } else {
+        setCouponError(data.error || "Invalid or expired coupon code.");
+      }
+    } catch {
+      setCouponError("Could not validate coupon. Please try again.");
+    } finally {
+      setCouponLoading(false);
+      setCouponInput("");
     }
-    setCouponInput("");
   };
+
 
   const isEmpty = items.length === 0;
 
@@ -108,8 +123,8 @@ export default function CartPage() {
                         className="flex-1 bg-dark-elevated border border-gold/15 rounded-lg px-3 py-2.5 text-sm text-cream placeholder:text-cream-faint/50 focus:outline-none focus:border-gold/40 transition-colors"
                         onKeyDown={(e) => e.key === "Enter" && handleCoupon()}
                       />
-                      <button onClick={handleCoupon} className="px-4 py-2.5 bg-gold/15 border border-gold/25 text-gold rounded-lg text-xs font-label hover:bg-gold/25 transition-colors">
-                        Apply
+                      <button onClick={handleCoupon} disabled={couponLoading} className="px-4 py-2.5 bg-gold/15 border border-gold/25 text-gold rounded-lg text-xs font-label hover:bg-gold/25 transition-colors disabled:opacity-50">
+                        {couponLoading ? "..." : "Apply"}
                       </button>
                     </div>
                   )}

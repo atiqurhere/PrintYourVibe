@@ -1,36 +1,93 @@
 "use client";
 import Link from "next/link";
-import { ShoppingBag, Layers, TrendingUp, Wallet, ArrowRight, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ShoppingBag, Layers, Wallet, ArrowRight, Clock, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, formatDateShort } from "@/lib/utils";
-import Image from "next/image";
+import { supabase } from "@/lib/supabase/client";
+import { db } from "@/lib/supabase/queries";
+import type { Order } from "@/lib/supabase/queries";
 
-const kpis = [
-  { label: "Total Orders",    value: "12",       icon: <ShoppingBag size={18} />, trend: "+2 this month" },
-  { label: "Pending",         value: "2",        icon: <Clock size={18} />,       trend: "In production" },
-  { label: "Saved Designs",   value: "8",        icon: <Layers size={18} />,      trend: "Last saved today" },
-  { label: "Total Spent",     value: "£284.60",  icon: <Wallet size={18} />,      trend: "Lifetime value" },
-];
-
-const recentOrders = [
-  { id: "ord-1", number: "PYV-12345", product: "Classic Premium Tee", status: "dispatched" as const, date: "2026-03-31", total: 23.98 },
-  { id: "ord-2", number: "PYV-12301", product: "Heavyweight Hoodie",  status: "delivered"  as const, date: "2026-03-15", total: 45.99 },
-  { id: "ord-3", number: "PYV-12289", product: "Canvas Tote Bag",    status: "delivered"  as const, date: "2026-03-01", total: 16.98 },
-];
-
-const recentMockups = [
-  { id: "m1", thumb: "/products/tshirt-black.png",   product: "Classic Premium Tee", date: "2026-03-31" },
-  { id: "m2", thumb: "/products/hoodie-black.png",   product: "Heavyweight Hoodie",  date: "2026-03-28" },
-  { id: "m3", thumb: "/products/totebag-natural.png", product: "Canvas Tote Bag",   date: "2026-03-20" },
-  { id: "m4", thumb: "/products/tshirt-white.png",   product: "Relaxed Fit Tee",    date: "2026-03-15" },
-];
+interface DashboardData {
+  userName: string;
+  totalOrders: number;
+  pendingOrders: number;
+  totalSpent: number;
+  recentOrders: Order[];
+}
 
 export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setLoading(false); return; }
+
+      const userId = session.user.id;
+      const userName = session.user.user_metadata?.full_name
+        || session.user.user_metadata?.name
+        || session.user.email?.split("@")[0]
+        || "there";
+
+      // Fetch user's orders
+      const { data: orders } = await db
+        .from("orders")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      const allOrders = (orders ?? []) as Order[];
+      const totalSpent = allOrders.reduce((s, o) => s + o.total_pence / 100, 0);
+      const pendingOrders = allOrders.filter((o) =>
+        ["pending", "confirmed", "printing"].includes(o.status)
+      ).length;
+
+      setData({
+        userName,
+        totalOrders: allOrders.length,
+        pendingOrders,
+        totalSpent,
+        recentOrders: allOrders.slice(0, 5),
+      });
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-6">
+        <div className="h-10 bg-dark-elevated rounded-xl w-64" />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1,2,3,4].map((i) => <div key={i} className="h-28 bg-dark-elevated rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const kpis = [
+    { label: "Total Orders",  value: String(data?.totalOrders ?? 0),         icon: <ShoppingBag size={18} />, trend: "Lifetime" },
+    { label: "In Progress",   value: String(data?.pendingOrders ?? 0),        icon: <Clock size={18} />,       trend: "Being printed/shipped" },
+    { label: "Saved Designs", value: "—",                                    icon: <Layers size={18} />,      trend: "Mockup tool" },
+    { label: "Total Spent",   value: formatPrice(data?.totalSpent ?? 0),     icon: <Wallet size={18} />,      trend: "Lifetime value" },
+  ];
+
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-display font-bold text-3xl text-cream">Good morning, Jane 👋</h1>
+        <h1 className="font-display font-bold text-3xl text-cream">
+          {greeting()}, {data?.userName} 👋
+        </h1>
         <p className="text-cream-muted mt-1">Here&apos;s what&apos;s happening with your account.</p>
       </div>
 
@@ -41,7 +98,6 @@ export default function DashboardPage() {
             <CardContent>
               <div className="flex items-start justify-between mb-3">
                 <span className="text-gold/70">{kpi.icon}</span>
-                <TrendingUp size={14} className="text-green-400/50" />
               </div>
               <p className="font-display font-bold text-3xl text-cream mb-1">{kpi.value}</p>
               <p className="font-heading text-sm text-cream-muted">{kpi.label}</p>
@@ -52,22 +108,25 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid xl:grid-cols-2 gap-8">
-        {/* Recent Mockups */}
+        {/* Quick Links */}
         <Card>
           <CardContent>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-heading text-cream font-semibold">Recent Mockups</h2>
-              <Link href="/dashboard/mockups" className="text-xs text-gold hover:text-gold-light transition-colors flex items-center gap-1">
-                View all <ArrowRight size={12} />
-              </Link>
+              <h2 className="font-heading text-cream font-semibold">Quick Actions</h2>
             </div>
-            <div className="grid grid-cols-4 gap-3">
-              {recentMockups.map((m) => (
-                <Link key={m.id} href="/mockup" className="group">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-dark-elevated border border-gold/10 group-hover:border-gold/35 transition-all">
-                    <Image src={m.thumb} alt={m.product} width={100} height={100} className="object-contain w-full h-full p-2 group-hover:scale-105 transition-transform duration-300" />
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { href: "/mockup",    icon: <Layers size={20} />,      label: "New Design",    sub: "Open mockup tool" },
+                { href: "/products",  icon: <ShoppingBag size={20} />, label: "Shop Products", sub: "Browse catalogue" },
+                { href: "/track-order", icon: <Clock size={20} />,     label: "Track Order",   sub: "Check delivery" },
+                { href: "/dashboard/profile", icon: <User size={20} />, label: "My Profile",   sub: "Update details" },
+              ].map((item) => (
+                <Link key={item.href} href={item.href} className="group flex items-start gap-3 p-3 rounded-xl border border-gold/10 hover:border-gold/30 hover:bg-dark-elevated transition-all">
+                  <span className="text-gold/60 group-hover:text-gold transition-colors mt-0.5">{item.icon}</span>
+                  <div>
+                    <p className="font-heading text-sm text-cream font-semibold group-hover:text-gold transition-colors">{item.label}</p>
+                    <p className="font-label text-[10px] text-cream-faint">{item.sub}</p>
                   </div>
-                  <p className="font-label text-[9px] text-cream-faint mt-1.5 text-center uppercase tracking-wide truncate">{formatDateShort(m.date)}</p>
                 </Link>
               ))}
             </div>
@@ -83,24 +142,36 @@ export default function DashboardPage() {
                 View all <ArrowRight size={12} />
               </Link>
             </div>
-            <div className="space-y-3">
-              {recentOrders.map((order) => (
-                <Link
-                  key={order.id}
-                  href={`/dashboard/orders/${order.id}`}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-dark-elevated transition-colors group"
-                >
-                  <div>
-                    <p className="font-heading text-sm text-cream font-semibold group-hover:text-gold transition-colors">{order.number}</p>
-                    <p className="font-label text-[10px] text-cream-faint uppercase tracking-wide mt-0.5">{order.product} · {formatDateShort(order.date)}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={order.status}>{order.status}</Badge>
-                    <span className="font-heading text-sm text-cream">{formatPrice(order.total)}</span>
-                  </div>
+            {data?.recentOrders && data.recentOrders.length > 0 ? (
+              <div className="space-y-3">
+                {data.recentOrders.map((order) => (
+                  <Link
+                    key={order.id}
+                    href={`/dashboard/orders/${order.id}`}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-dark-elevated transition-colors group"
+                  >
+                    <div>
+                      <p className="font-heading text-sm text-cream font-semibold group-hover:text-gold transition-colors">{order.number}</p>
+                      <p className="font-label text-[10px] text-cream-faint uppercase tracking-wide mt-0.5">
+                        {order.items?.[0]?.productName || "Custom Order"} · {formatDateShort(order.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={order.status as any}>{order.status}</Badge>
+                      <span className="font-heading text-sm text-cream">{formatPrice(order.total_pence / 100)}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center">
+                <ShoppingBag size={32} className="text-gold/20 mx-auto mb-3" />
+                <p className="text-cream-muted text-sm">No orders yet.</p>
+                <Link href="/products" className="text-gold text-sm hover:text-gold-light transition-colors">
+                  Browse products →
                 </Link>
-              ))}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

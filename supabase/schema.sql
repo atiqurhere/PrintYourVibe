@@ -28,14 +28,19 @@ create policy "Admins can manage all profiles"
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, full_name, role)
+  insert into public.profiles (id, full_name, role, avatar_url)
   values (
     new.id,
-    new.raw_user_meta_data->>'full_name',
-    coalesce(new.raw_user_meta_data->>'role', 'user')
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
+    coalesce(new.raw_user_meta_data->>'role', 'user'),
+    new.raw_user_meta_data->>'avatar_url'
   )
   on conflict (id) do nothing;
   return new;
+exception
+  when others then
+    -- Catch any errors so OAuth signups still succeed even if profile creation fails
+    return new;
 end;
 $$;
 
