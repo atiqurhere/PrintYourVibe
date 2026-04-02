@@ -1,0 +1,58 @@
+﻿
+> printyourvibe@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.2.1 (Turbopack)
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 5.9s
+  Running TypeScript ...
+  Finished TypeScript in 8.1s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/30) ...
+  Generating static pages using 7 workers (7/30) 
+  Generating static pages using 7 workers (14/30) 
+  Generating static pages using 7 workers (22/30) 
+Γ£ô Generating static pages using 7 workers (30/30) in 1331ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /about
+Γö£ Γùï /admin
+Γö£ Γùï /admin/coupons
+Γö£ Γùï /admin/customers
+Γö£ Γùï /admin/orders
+Γö£ ╞Æ /admin/orders/[id]
+Γö£ Γùï /admin/products
+Γö£ Γùï /admin/products/new
+Γö£ Γùï /admin/reviews
+Γö£ Γùï /admin/settings
+Γö£ Γùï /cart
+Γö£ Γùï /checkout
+Γö£ Γùï /checkout/cancel
+Γö£ Γùï /checkout/success
+Γö£ Γùï /contact
+Γö£ Γùï /dashboard
+Γö£ Γùï /dashboard/addresses
+Γö£ Γùï /dashboard/designs
+Γö£ Γùï /dashboard/mockups
+Γö£ Γùï /dashboard/orders
+Γö£ ╞Æ /dashboard/orders/[id]
+Γö£ Γùï /dashboard/profile
+Γö£ Γùï /forgot-password
+Γö£ Γùï /login
+Γö£ Γùï /mockup
+Γö£ ╞Æ /mockup/[productSlug]
+Γö£ Γùï /products
+Γö£ ╞Æ /products/[slug]
+Γö£ Γùï /register
+Γöö Γùï /track-order
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

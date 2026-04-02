@@ -1,0 +1,186 @@
+export const categories = [
+  { id: "cat-1", name: "T-Shirts", slug: "t-shirts", description: "Premium quality custom printed t-shirts", image_url: "/products/tshirt-black.png", item_count: 12 },
+  { id: "cat-2", name: "Hoodies", slug: "hoodies", description: "Heavyweight fleece custom printed hoodies", image_url: "/products/hoodie-black.png", item_count: 8 },
+  { id: "cat-3", name: "Sweatshirts", slug: "sweatshirts", description: "Classic crewneck sweatshirts", image_url: "/products/hoodie-navy.png", item_count: 6 },
+  { id: "cat-4", name: "Tote Bags", slug: "tote-bags", description: "Heavy canvas custom printed tote bags", image_url: "/products/totebag-natural.png", item_count: 4 },
+];
+
+export const products = [
+  {
+    id: "prod-1",
+    category_id: "cat-1",
+    category_name: "T-Shirts",
+    name: "Classic Premium Tee",
+    slug: "classic-premium-tee",
+    description: "Our bestselling 100% ring-spun cotton t-shirt. Pre-shrunk, soft, and built to last. The perfect canvas for your designs. Available in a range of colours with vibrant DTG printing.",
+    base_price: 19.99,
+    compare_price: 29.99,
+    rating: 4.8,
+    review_count: 247,
+    is_featured: true,
+    print_area: { front: { x: 120, y: 90, w: 260, h: 280 }, back: { x: 120, y: 90, w: 260, h: 280 } },
+    available_sizes: [
+      { label: "XS", price_modifier: 0 },
+      { label: "S",  price_modifier: 0 },
+      { label: "M",  price_modifier: 0 },
+      { label: "L",  price_modifier: 0 },
+      { label: "XL", price_modifier: 2 },
+      { label: "XXL",price_modifier: 2 },
+    ],
+    colours: [
+      { id: "c1-1", name: "Jet Black",    hex: "#1a1a1a", mockup_front_url: "/products/tshirt-black.png",   mockup_back_url: "/products/tshirt-black-back.png" },
+      { id: "c1-2", name: "Pure White",   hex: "#f5f5f5", mockup_front_url: "/products/tshirt-white.png",   mockup_back_url: "/products/tshirt-white-back.png" },
+      { id: "c1-3", name: "Deep Burgundy",hex: "#6b1a2a", mockup_front_url: "/products/tshirt-burgundy.png",mockup_back_url: "/products/tshirt-burgundy-back.png" },
+    ],
+    gallery: [
+      "/products/tshirt-black.png",
+      "/products/tshirt-white.png",
+      "/products/tshirt-burgundy.png",
+    ],
+  },
+  {
+    id: "prod-2",
+    category_id: "cat-1",
+    category_name: "T-Shirts",
+    name: "Relaxed Fit Tee",
+    slug: "relaxed-fit-tee",
+    description: "A slightly oversized, relaxed fit tee perfect for streetwear aesthetics. Made from heavyweight 200gsm cotton with a brushed interior for extra softness.",
+    base_price: 22.99,
+    compare_price: null,
+    rating: 4.6,
+    review_count: 89,
+    is_featured: true,
+    print_area: { front: { x: 115, y: 95, w: 270, h: 290 }, back: { x: 115, y: 95, w: 270, h: 290 } },
+    available_sizes: [
+      { label: "S",  price_modifier: 0 },
+      { label: "M",  price_modifier: 0 },
+      { label: "L",  price_modifier: 0 },
+      { label: "XL", price_modifier: 2 },
+      { label: "XXL",price_modifier: 2 },
+    ],
+    colours: [
+      { id: "c2-1", name: "Pure White", hex: "#f5f5f5", mockup_front_url: "/products/tshirt-white.png", mockup_back_url: "/products/tshirt-white-back.png" },
+      { id: "c2-2", name: "Jet Black",  hex: "#1a1a1a", mockup_front_url: "/products/tshirt-black.png", mockup_back_url: "/products/tshirt-black-back.png" },
+    ],
+    gallery: ["/products/tshirt-white.png", "/products/tshirt-black.png"],
+  },
+  {
+    id: "prod-3",
+    category_id: "cat-2",
+    category_name: "Hoodies",
+    name: "Heavyweight Pullover Hoodie",
+    slug: "heavyweight-pullover-hoodie",
+    description: "380gsm fleece pullover hoodie with a double-lined hood and kangaroo pocket. Built for cold weather and bold statements. DTG and embroidery compatible.",
+    base_price: 42.99,
+    compare_price: 55.99,
+    rating: 4.9,
+    review_count: 312,
+    is_featured: true,
+    print_area: { front: { x: 130, y: 110, w: 240, h: 240 }, back: { x: 130, y: 90, w: 240, h: 260 } },
+    available_sizes: [
+      { label: "S",  price_modifier: 0 },
+      { label: "M",  price_modifier: 0 },
+      { label: "L",  price_modifier: 0 },
+      { label: "XL", price_modifier: 3 },
+      { label: "XXL",price_modifier: 3 },
+    ],
+    colours: [
+      { id: "c3-1", name: "Jet Black", hex: "#1a1a1a", mockup_front_url: "/products/hoodie-black.png", mockup_back_url: "/products/hoodie-black-back.png" },
+      { id: "c3-2", name: "Navy Blue", hex: "#1f2d4e", mockup_front_url: "/products/hoodie-navy.png",  mockup_back_url: "/products/hoodie-navy-back.png" },
+    ],
+    gallery: ["/products/hoodie-black.png", "/products/hoodie-navy.png"],
+  },
+  {
+    id: "prod-4",
+    category_id: "cat-2",
+    category_name: "Hoodies",
+    name: "Zip-Up Hoodie",
+    slug: "zip-up-hoodie",
+    description: "Premium zip-up hoodie in 320gsm cotton-polyester blend. Full-length metal zipper, side pockets, and a relaxed athletic fit. Great for left-chest and full-back prints.",
+    base_price: 46.99,
+    compare_price: null,
+    rating: 4.7,
+    review_count: 156,
+    is_featured: false,
+    print_area: { front: { x: 80, y: 100, w: 180, h: 220 }, back: { x: 130, y: 90, w: 240, h: 260 } },
+    available_sizes: [
+      { label: "S", price_modifier: 0 }, { label: "M", price_modifier: 0 },
+      { label: "L", price_modifier: 0 }, { label: "XL", price_modifier: 3 },
+    ],
+    colours: [
+      { id: "c4-1", name: "Navy Blue", hex: "#1f2d4e", mockup_front_url: "/products/hoodie-navy.png",  mockup_back_url: "/products/hoodie-navy-back.png" },
+      { id: "c4-2", name: "Jet Black", hex: "#1a1a1a", mockup_front_url: "/products/hoodie-black.png", mockup_back_url: "/products/hoodie-black-back.png" },
+    ],
+    gallery: ["/products/hoodie-navy.png", "/products/hoodie-black.png"],
+  },
+  {
+    id: "prod-5",
+    category_id: "cat-3",
+    category_name: "Sweatshirts",
+    name: "Classic Crewneck Sweatshirt",
+    slug: "classic-crewneck-sweatshirt",
+    description: "280gsm medium-weight crewneck sweatshirt. Ribbed collar, cuffs and hem. Versatile everyday piece with outstanding print quality on the front chest and full back.",
+    base_price: 34.99,
+    compare_price: 42.99,
+    rating: 4.7,
+    review_count: 198,
+    is_featured: true,
+    print_area: { front: { x: 125, y: 95, w: 250, h: 250 }, back: { x: 125, y: 85, w: 250, h: 270 } },
+    available_sizes: [
+      { label: "XS", price_modifier: 0 }, { label: "S", price_modifier: 0 },
+      { label: "M",  price_modifier: 0 }, { label: "L", price_modifier: 0 },
+      { label: "XL", price_modifier: 2 }, { label: "XXL", price_modifier: 2 },
+    ],
+    colours: [
+      { id: "c5-1", name: "Navy Blue", hex: "#1f2d4e", mockup_front_url: "/products/hoodie-navy.png",  mockup_back_url: "/products/hoodie-navy-back.png" },
+      { id: "c5-2", name: "Jet Black", hex: "#1a1a1a", mockup_front_url: "/products/hoodie-black.png", mockup_back_url: "/products/hoodie-black-back.png" },
+    ],
+    gallery: ["/products/hoodie-navy.png", "/products/hoodie-black.png"],
+  },
+  {
+    id: "prod-6",
+    category_id: "cat-4",
+    category_name: "Tote Bags",
+    name: "Heavy Canvas Tote Bag",
+    slug: "heavy-canvas-tote-bag",
+    description: "12oz heavyweight natural canvas tote bag. Long carry handles, reinforced stitching and a wide base. Perfect for vibrant prints that last wash after wash.",
+    base_price: 14.99,
+    compare_price: null,
+    rating: 4.5,
+    review_count: 74,
+    is_featured: true,
+    print_area: { front: { x: 100, y: 100, w: 300, h: 300 }, back: { x: 100, y: 100, w: 300, h: 300 } },
+    available_sizes: [
+      { label: "One Size", price_modifier: 0 },
+    ],
+    colours: [
+      { id: "c6-1", name: "Natural", hex: "#d4c5a9", mockup_front_url: "/products/totebag-natural.png", mockup_back_url: "/products/totebag-natural-back.png" },
+    ],
+    gallery: ["/products/totebag-natural.png"],
+  },
+];
+
+export const testimonials = [
+  { id: "t1", name: "Sophie W.", location: "Manchester", rating: 5, text: "Absolutely blown away by the quality. My design came out crisp and vibrant — exactly as it looked in the mockup tool. Will definitely be ordering again.", avatar: "SW", product: "Classic Premium Tee" },
+  { id: "t2", name: "James R.", location: "London", rating: 5, text: "The mockup tool is so easy to use. I uploaded my artwork, arranged it, and the final hoodie looks incredible. Fast delivery too — arrived in 3 days.", avatar: "JR", product: "Heavyweight Pullover Hoodie" },
+  { id: "t3", name: "Priya M.", location: "Birmingham", rating: 5, text: "Ordered 20 custom tees for our event. Every single one was perfect. The colours are rich and the fabric is soft. Our team loved them.", avatar: "PM", product: "Classic Premium Tee" },
+  { id: "t4", name: "Tom A.", location: "Leeds", rating: 4, text: "Really impressed with the service. The sweatshirt quality is premium and the print didn't crack or fade after multiple washes. Great value.", avatar: "TA", product: "Classic Crewneck Sweatshirt" },
+  { id: "t5", name: "Chloe B.", location: "Edinburgh", rating: 5, text: "Used PrintYourVibe for my small business merchandise. The tote bags are beautiful and my customers keep asking where I got them. 10/10.", avatar: "CB", product: "Heavy Canvas Tote Bag" },
+];
+
+export const galleryPhotos = [
+  { id: "g1", url: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80", alt: "Custom printed white tee" },
+  { id: "g2", url: "https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=400&q=80", alt: "Custom hoodie lifestyle" },
+  { id: "g3", url: "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400&q=80", alt: "Black tshirt fashion" },
+  { id: "g4", url: "https://images.unsplash.com/photo-1529374255404-311a2a4f1fd9?w=400&q=80", alt: "Tote bag lifestyle" },
+  { id: "g5", url: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&q=80", alt: "Custom sweatshirt" },
+  { id: "g6", url: "https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?w=400&q=80", alt: "Fashion editorial tee" },
+  { id: "g7", url: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&q=80", alt: "Hoodie flatlay" },
+  { id: "g8", url: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&q=80", alt: "White tee model" },
+];
+
+export const featuredProducts = products.filter((p) => p.is_featured);
+
+export type Product = (typeof products)[0];
+export type Category = (typeof categories)[0];
+export type Testimonial = (typeof testimonials)[0];

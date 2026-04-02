@@ -1,26 +1,160 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-gold: #c9a84c;
+  --color-gold-light: #e8c97a;
+  --color-gold-muted: #8a6f30;
+  --color-cream: #f5f0e8;
+  --color-cream-muted: #a09880;
+  --color-cream-faint: #5a5548;
+  --color-dark: #0a0a0a;
+  --color-dark-2: #111111;
+  --color-dark-card: #161616;
+  --color-dark-elevated: #1c1c1c;
+  --color-status-pending: #f59e0b;
+  --color-status-confirmed: #3b82f6;
+  --color-status-printing: #8b5cf6;
+  --color-status-dispatched: #14b8a6;
+  --color-status-delivered: #22c55e;
+  --color-status-cancelled: #ef4444;
+  --color-status-refunded: #6b7280;
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-heading: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
+  --font-body: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-label: var(--font-space-mono), "Space Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: #0a0a0a;
+    color: #f5f0e8;
+    font-family: var(--font-body), sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+  ::selection { background: rgba(201, 168, 76, 0.3); color: #f5f0e8; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #8a6f30; border-radius: 3px; }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── Keyframes ─── */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
+  50%       { box-shadow: 0 0 20px 4px rgba(201, 168, 76, 0.2); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Utility Classes ─── */
+.animate-fade-in-up  { animation: fadeInUp 0.6s ease forwards; }
+.animate-fade-in     { animation: fadeIn 0.4s ease forwards; }
+.animate-scale-in    { animation: scaleIn 0.3s ease forwards; }
+.animate-float       { animation: float 4s ease-in-out infinite; }
+.animate-marquee     { animation: marquee 30s linear infinite; }
+.animate-spin-slow   { animation: spin 3s linear infinite; }
+
+/* ─── Gold Border / Glow ─── */
+.border-gold-15 { border: 1px solid rgba(201, 168, 76, 0.15); }
+.border-gold-35 { border: 1px solid rgba(201, 168, 76, 0.35); }
+.gold-glow      { box-shadow: 0 0 24px rgba(201, 168, 76, 0.15); }
+.gold-glow-lg   { box-shadow: 0 0 40px rgba(201, 168, 76, 0.25); }
+.gold-glow-pulse { animation: goldPulse 2.5s ease-in-out infinite; }
+.card-hover { transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+.card-hover:hover { border-color: rgba(201, 168, 76, 0.35); box-shadow: 0 0 30px rgba(201, 168, 76, 0.12); }
+
+/* ─── Shimmer Button ─── */
+.btn-shimmer { position: relative; overflow: hidden; }
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+.btn-shimmer:hover::after { animation: shimmer 0.65s ease forwards; }
+
+/* ─── Radial Gold Background ─── */
+.bg-radial-gold {
+  background: radial-gradient(ellipse 60% 50% at 70% 50%, rgba(201,168,76,0.08) 0%, transparent 70%),
+              radial-gradient(ellipse 40% 30% at 20% 80%, rgba(201,168,76,0.05) 0%, transparent 60%),
+              #0a0a0a;
+}
+
+/* ─── Glass Card ─── */
+.glass { background: rgba(22, 22, 22, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+/* ─── Divider ─── */
+.divider-gold { border: none; border-top: 1px solid rgba(201, 168, 76, 0.1); }
+
+/* ─── Input Focus Gold ─── */
+.input-gold:focus {
+  outline: none;
+  border-bottom-color: #c9a84c;
+  box-shadow: 0 2px 0 0 rgba(201,168,76,0.4);
+}
+
+/* ─── Kanban / Timeline ─── */
+.timeline-line { position: relative; }
+.timeline-line::before {
+  content: '';
+  position: absolute;
+  left: 11px; top: 24px; bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.4), rgba(201,168,76,0.05));
+}
+
+/* ─── Masonry Grid ─── */
+.masonry { columns: 2; column-gap: 1rem; }
+@media (min-width: 768px)  { .masonry { columns: 3; } }
+@media (min-width: 1280px) { .masonry { columns: 4; } }
+.masonry-item { break-inside: avoid; margin-bottom: 1rem; }
+
+/* ─── Text Gradient ─── */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #c9a84c 0%, #e8c97a 50%, #c9a84c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Scrollbar hide utility ─── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─── Dashed print area (Konva overlay reference) ─── */
+.print-area-overlay {
+  border: 2px dashed rgba(201,168,76,0.6);
+  pointer-events: none;
 }
