@@ -1,40 +1,48 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
 export default function AuthCallback() {
   const router = useRouter();
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    // The Supabase JS client automatically exchanges the URL '?code=...' 
-    // for a valid session, and stores it in localStorage.
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" || session) {
-        // Redirect to appropriate dashboard based on user role
-        const role = session.user?.user_metadata?.role;
-        router.push(role === "admin" ? "/admin" : "/dashboard");
-      }
-    });
+    let mounted = true;
 
-    // Fallback: If onAuthStateChange misses the initial load, manually check session after a tiny delay
-    const timer = setTimeout(() => {
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) {
-          const role = data.session.user?.user_metadata?.role;
-          router.push(role === "admin" ? "/admin" : "/dashboard");
-        } else {
-          // If no session is found, send back to login
-          router.push("/login?error=verification_failed");
+    async function handleAuth() {
+      // 1. Check for PKCE secure code in the query params
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      
+      if (code) {
+        // Exchange the code for a session explicitly
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+           console.error("Auth Exchange Error:", error.message);
+           if (mounted) setErrorMsg(`Secure verification failed: ${error.message}`);
+           return;
         }
-      });
-    }, 2500);
+      }
 
-    return () => {
-      authListener.subscription.unsubscribe();
-      clearTimeout(timer);
-    };
+      // 2. The session should now be active locally 
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      
+      if (data?.session) {
+        const role = data.session?.user?.user_metadata?.role;
+        router.push(role === "admin" ? "/admin" : "/dashboard");
+      } else {
+        console.error("No session found after callback", sessionError);
+        if (mounted) setErrorMsg("Verification failed: Session could not be established. Redirecting...");
+        setTimeout(() => {
+          if (mounted) router.push("/login?error=verification_failed");
+        }, 3000);
+      }
+    }
+
+    handleAuth();
+
+    return () => { mounted = false; };
   }, [router]);
 
   return (
@@ -46,8 +54,8 @@ export default function AuthCallback() {
       <h1 className="font-display text-2xl font-bold tracking-wide">
         Verifying Secure Login
       </h1>
-      <p className="text-cream-muted text-sm mt-2">
-        Please wait while we establish a secure connection...
+      <p className={`text-sm mt-3 max-w-md text-center px-4 ${errorMsg ? "text-red-400" : "text-cream-muted"}`}>
+        {errorMsg || "Please wait while we establish a secure connection..."}
       </p>
     </div>
   );

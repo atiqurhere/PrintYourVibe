@@ -108,10 +108,13 @@ function LoginForm() {
           size="md"
           className="w-full"
           onClick={async () => {
-            await supabase.auth.signInWithOAuth({
+            const { error: oauthError } = await supabase.auth.signInWithOAuth({
               provider: "google",
               options: { redirectTo: `${window.location.origin}/auth/callback` },
             });
+            if (oauthError) {
+              setError(oauthError.message || "Could not initialize Google login.");
+            }
           }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24">
