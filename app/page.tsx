@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getFeaturedProducts, getCategories, getTestimonials } from "@/lib/supabase/queries";
+import { getFeaturedProducts, getCategories, getTestimonials, getHowItWorks, getTrustItems } from "@/lib/supabase/queries";
 import { formatPrice } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -12,31 +12,20 @@ export const metadata: Metadata = {
   description: "Upload your artwork and preview it live on premium t-shirts, hoodies and more. No account needed. UK printed, fast delivery.",
 };
 
-const trustItems = [
-  { icon: "🇬🇧", label: "UK Printed" },
-  { icon: "↩️", label: "Free Returns" },
-  { icon: "🔒", label: "Secure Checkout" },
-  { icon: "🚚", label: "Fast Dispatch" },
-];
-
-const howItWorks = [
-  { step: "01", title: "Choose a Product", desc: "Browse our range of premium garments and accessories. Pick your style, colour, and size." },
-  { step: "02", title: "Upload Your Design", desc: "Drop your artwork onto our live 2D mockup tool. Drag, scale, and rotate until it's perfect." },
-  { step: "03", title: "We Print & Deliver", desc: "We produce your order with professional DTG printing and deliver straight to your door." },
-];
-
 // Fetch all data server-side
 async function getPageData() {
-  const [featuredProducts, categories, testimonials] = await Promise.all([
+  const [featuredProducts, categories, testimonials, howItWorks, trustItems] = await Promise.all([
     getFeaturedProducts(),
     getCategories(),
     getTestimonials(),
+    getHowItWorks(),
+    getTrustItems(),
   ]);
-  return { featuredProducts, categories, testimonials };
+  return { featuredProducts, categories, testimonials, howItWorks, trustItems };
 }
 
 export default async function LandingPage() {
-  const { featuredProducts, categories, testimonials } = await getPageData();
+  const { featuredProducts, categories, testimonials, howItWorks, trustItems } = await getPageData();
 
   return (
     <PublicLayout>
@@ -77,34 +66,72 @@ export default async function LandingPage() {
           </div>
 
           {/* Right — floating product cards */}
+          {/* Right — floating product cards (3-card layout) */}
           <div className="hidden lg:flex items-center justify-center relative h-[520px]">
-            {/* Main card */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 animate-float z-10"
-              style={{ animationDelay: "0s" }}>
-              <div className="bg-dark-card border border-gold/20 rounded-2xl p-4 shadow-2xl gold-glow">
-                <div className="aspect-square rounded-xl overflow-hidden bg-dark-elevated mb-3">
+            
+            {/* Top Left Card (Smaller, delayed float) */}
+            <div className="absolute top-4 left-0 -translate-x-4 w-48 animate-float z-10"
+              style={{ animationDelay: "0.2s", transform: "scale(0.9)" }}>
+              <div className="bg-dark-card border border-gold/15 rounded-2xl p-3 shadow-2xl card-hover">
+                <div className="aspect-square rounded-xl overflow-hidden bg-white mb-3">
                   <Image
-                    src={featuredProducts[0]?.colours?.[0]?.mockup_front_url || "/products/tshirt-black.png"}
-                    alt="Custom tee"
-                    width={256} height={256}
-                    className="object-cover w-full h-full"
+                    src={featuredProducts[1]?.colours?.[0]?.mockup_front_url || "/products/hoodie-black.png"}
+                    alt={featuredProducts[1]?.name || "Heavyweight Hoodie"}
+                    width={192} height={192}
+                    className="object-cover w-full h-full mix-blend-multiply"
                   />
                 </div>
-                <p className="font-heading text-sm text-cream font-semibold">{featuredProducts[0]?.name || "Classic Premium Tee"}</p>
-                <p className="font-label text-xs text-gold mt-0.5">From {formatPrice(featuredProducts[0]?.base_price || 19.99)}</p>
+                <p className="font-heading text-xs text-cream font-semibold truncate">
+                  {featuredProducts[1]?.name || "Heavyweight Hoodie"}
+                </p>
+                <p className="font-label text-[10px] text-gold mt-1">
+                  From {formatPrice(featuredProducts[1]?.base_price || 42.99)}
+                </p>
               </div>
             </div>
-            {/* Trust badge */}
-            <div className="absolute bottom-16 right-4 bg-dark-card border border-gold/15 rounded-2xl p-4 shadow-xl animate-float z-20"
-              style={{ animationDelay: "0.5s" }}>
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((i) => <Star key={i} size={12} className="text-gold fill-gold" />)}
+
+            {/* Center Main Card (Large, immediate float) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 animate-float z-30"
+              style={{ animationDelay: "0s" }}>
+              <div className="bg-dark-card border border-gold/30 rounded-2xl p-4 shadow-[0_0_40px_rgba(201,168,76,0.15)] gold-glow card-hover">
+                <div className="aspect-square rounded-xl overflow-hidden bg-white mb-4">
+                  <Image
+                    src={featuredProducts[0]?.colours?.[0]?.mockup_front_url || "/products/tshirt-black.png"}
+                    alt={featuredProducts[0]?.name || "Classic Premium Tee"}
+                    width={288} height={288}
+                    className="object-cover w-full h-full mix-blend-multiply"
+                  />
                 </div>
-                <span className="font-label text-xs text-cream">4.9 / 5</span>
+                <p className="font-heading text-sm text-cream font-semibold truncate">
+                  {featuredProducts[0]?.name || "Classic Premium Tee"}
+                </p>
+                <p className="font-label text-xs text-gold mt-1">
+                  From {formatPrice(featuredProducts[0]?.base_price || 19.99)}
+                </p>
               </div>
-              <p className="font-label text-[10px] text-cream-faint mt-1">2,400+ happy customers</p>
             </div>
+
+            {/* Bottom Right Card (Smaller, longest float delay) */}
+            <div className="absolute bottom-4 right-0 translate-x-4 w-48 animate-float z-20"
+              style={{ animationDelay: "0.5s", transform: "scale(0.9)" }}>
+              <div className="bg-dark-card border border-gold/15 rounded-2xl p-3 shadow-2xl card-hover">
+                <div className="aspect-square rounded-xl overflow-hidden bg-white mb-3">
+                  <Image
+                    src={featuredProducts[2]?.colours?.[0]?.mockup_front_url || "/products/totebag-natural.png"}
+                    alt={featuredProducts[2]?.name || "Canvas Tote Bag"}
+                    width={192} height={192}
+                    className="object-cover w-full h-full mix-blend-multiply"
+                  />
+                </div>
+                <p className="font-heading text-xs text-cream font-semibold truncate">
+                  {featuredProducts[2]?.name || "Canvas Tote Bag"}
+                </p>
+                <p className="font-label text-[10px] text-gold mt-1">
+                  From {formatPrice(featuredProducts[2]?.base_price || 14.99)}
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -114,9 +141,9 @@ export default async function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             {trustItems.map((item) => (
-              <div key={item.label} className="flex items-center gap-2.5 text-cream-muted">
+              <div key={item.id} className="flex items-center gap-2.5 text-cream-muted">
                 <span className="text-xl">{item.icon}</span>
-                <span className="font-label text-xs uppercase tracking-widest">{item.label}</span>
+                <span className="font-label text-xs uppercase tracking-widest">{item.title}</span>
               </div>
             ))}
           </div>
@@ -132,11 +159,11 @@ export default async function LandingPage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {howItWorks.map((step) => (
-              <div key={step.step} className="relative">
+              <div key={step.id} className="relative">
                 <div className="bg-dark-card border border-gold/12 rounded-2xl p-8 card-hover h-full">
-                  <div className="font-display font-bold text-6xl text-gold/10 mb-4 select-none">{step.step}</div>
+                  <div className="font-display font-bold text-6xl text-gold/10 mb-4 select-none">{step.icon}</div>
                   <h3 className="font-heading text-xl text-cream font-semibold mb-3">{step.title}</h3>
-                  <p className="text-cream-muted leading-relaxed">{step.desc}</p>
+                  <p className="text-cream-muted leading-relaxed">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -187,7 +214,7 @@ export default async function LandingPage() {
                         alt={cat.name}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-dark/90 via-dark/30 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -226,7 +253,7 @@ export default async function LandingPage() {
                       alt={product.name}
                       fill
                       className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
-                    />
+                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                     {product.compare_price && (
                       <div className="absolute top-3 left-3">
                         <span className="bg-red-500/90 text-white text-[10px] font-label px-2 py-0.5 rounded-full">SALE</span>

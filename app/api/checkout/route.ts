@@ -7,9 +7,12 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { generateOrderNumber } from "@/lib/utils";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-03-25.dahlia" as any });
-
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Stripe is not configured. Add STRIPE_SECRET_KEY to your environment." }, { status: 503 });
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-03-25.dahlia" as any });
+
   try {
     const body = await req.json();
     const { items, shipping, coupon, userId, shippingMethod } = body;

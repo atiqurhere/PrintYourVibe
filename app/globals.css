@@ -158,3 +158,9 @@
   border: 2px dashed rgba(201,168,76,0.6);
   pointer-events: none;
 }
+
+/*  Marquee  */
+@keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
+.animate-marquee { display: flex; animation: marquee 30s linear infinite; }
+.animate-marquee:hover { animation-play-state: paused; }
+

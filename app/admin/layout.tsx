@@ -4,20 +4,24 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, ShoppingBag, Package, Users, Tag,
-  Star, Settings, LogOut, ChevronRight, Bell
+  Star, Settings, LogOut, ChevronRight, Bell, Layers,
+  MessageSquare, FileEdit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToastProvider } from "@/components/ui/Toast";
 import { supabase } from "@/lib/supabase/client";
 
 const navItems = [
-  { label: "Dashboard",  href: "/admin",           icon: <LayoutDashboard size={18} /> },
-  { label: "Orders",     href: "/admin/orders",    icon: <ShoppingBag size={18} /> },
-  { label: "Products",   href: "/admin/products",  icon: <Package size={18} /> },
-  { label: "Customers",  href: "/admin/customers", icon: <Users size={18} /> },
-  { label: "Coupons",    href: "/admin/coupons",   icon: <Tag size={18} /> },
-  { label: "Reviews",    href: "/admin/reviews",   icon: <Star size={18} /> },
-  { label: "Settings",   href: "/admin/settings",  icon: <Settings size={18} /> },
+  { label: "Dashboard",    href: "/admin",              icon: <LayoutDashboard size={18} /> },
+  { label: "Orders",       href: "/admin/orders",       icon: <ShoppingBag size={18} /> },
+  { label: "Products",     href: "/admin/products",     icon: <Package size={18} /> },
+  { label: "Categories",   href: "/admin/categories",   icon: <Layers size={18} /> },
+  { label: "Customers",    href: "/admin/customers",    icon: <Users size={18} /> },
+  { label: "Coupons",      href: "/admin/coupons",      icon: <Tag size={18} /> },
+  { label: "Reviews",      href: "/admin/reviews",      icon: <Star size={18} /> },
+  { label: "Testimonials", href: "/admin/testimonials", icon: <MessageSquare size={18} /> },
+  { label: "Content",      href: "/admin/content",      icon: <FileEdit size={18} /> },
+  { label: "Settings",     href: "/admin/settings",     icon: <Settings size={18} /> },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

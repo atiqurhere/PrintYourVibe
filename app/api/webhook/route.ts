@@ -8,14 +8,21 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-03-25.dahlia" as any });
+// Lazy-initialize Stripe to avoid build-time crash when env vars are not set
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured.");
+  return new Stripe(key, { apiVersion: "2026-03-25.dahlia" as any });
+}
 
 // Service-role client — bypasses RLS so we can insert orders server-side
-const db = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+function getDb() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    { auth: { persistSession: false } }
+  );
+}
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -23,6 +30,7 @@ export async function POST(req: Request) {
 
   let event: Stripe.Event;
   try {
+    const stripe = getStripe();
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
   } catch (err: any) {
     console.error("[webhook] Signature verification failed:", err.message);
@@ -42,36 +50,33 @@ export async function POST(req: Request) {
 
       // Increment coupon used_count if applicable
       if (meta.couponCode) {
-        void db.rpc("increment_coupon_use", { code: meta.couponCode });
+        void getDb().rpc("increment_coupon_use", { code: meta.couponCode });
       }
 
+      const db = getDb();
       const { error } = await db.from("orders").insert({
-        number: meta.orderNumber,
-        user_id: meta.userId || null,
-        status: "confirmed",
-        subtotal_pence: subtotalPence,
-        shipping_pence: shippingPence,
-        discount_pence: discountPence,
-        total_pence: totalPence,
-        coupon_code: meta.couponCode || null,
-        stripe_session_id: session.id,
+        order_number:         meta.orderNumber,
+        user_id:              meta.userId || null,
+        status:               "confirmed",
+        subtotal_pence:       subtotalPence,
+        shipping_pence:       shippingPence,
+        discount_pence:       discountPence,
+        total_pence:          totalPence,
+        coupon_code:          meta.couponCode || null,
+        stripe_session_id:    session.id,
         stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
         items,
-        shipping_name: meta.shippingName,
-        shipping_email: meta.shippingEmail,
-        shipping_address: {
-          line1: meta.shippingLine1,
-          line2: meta.shippingLine2,
-          city: meta.shippingCity,
-          postcode: meta.shippingPostcode,
-          country: "GB",
-        },
+        shipping_name:        meta.shippingName,
+        shipping_email:       meta.shippingEmail,
+        shipping_address_1:   meta.shippingLine1,
+        shipping_address_2:   meta.shippingLine2 || null,
+        shipping_city:        meta.shippingCity,
+        shipping_postcode:    meta.shippingPostcode,
+        shipping_country:     "GB",
         history: [
-          { status: "pending",   note: "Order created", by: "system", at: new Date().toISOString() },
+          { status: "pending",   note: "Order created",                by: "system", at: new Date().toISOString() },
           { status: "confirmed", note: "Payment confirmed via Stripe", by: "system", at: new Date().toISOString() },
         ],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
 
       if (error) {
@@ -89,5 +94,5 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true });
 }
 
-// Required: tell Next.js not to parse body (Stripe needs raw body to verify signature)
-export const config = { api: { bodyParser: false } };
+// App Router: tell Next.js not to parse body (Stripe needs raw body to verify signature)
+export const dynamic = "force-dynamic";

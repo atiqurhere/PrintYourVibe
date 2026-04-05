@@ -24,7 +24,7 @@ export default function DesignsPage() {
           {DESIGNS.map((d) => (
             <div key={d.id} className="bg-dark-card border border-gold/10 rounded-2xl overflow-hidden hover:border-gold/30 transition-all group">
               <div className="aspect-video relative bg-dark-elevated overflow-hidden">
-                <Image src={d.thumb} alt={d.name} fill className="object-contain p-6 group-hover:scale-105 transition-transform duration-300" />
+                <Image src={d.thumb} alt={d.name} fill className="object-contain p-6 group-hover:scale-105 transition-transform duration-300"  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
               </div>
               <div className="p-5">
                 <h3 className="font-heading text-cream font-semibold mb-0.5">{d.name}</h3>

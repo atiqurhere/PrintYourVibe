@@ -50,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${dmSans.variable} ${inter.variable} ${spaceMono.variable}`}
     >
       <body className="bg-dark text-cream font-body antialiased min-h-screen">

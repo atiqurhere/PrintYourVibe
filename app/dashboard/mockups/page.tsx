@@ -26,7 +26,7 @@ export default function MockupsPage() {
         {MOCKUPS.map((m) => (
           <div key={m.id} className="group bg-dark-card border border-gold/10 rounded-2xl overflow-hidden hover:border-gold/30 transition-all">
             <div className="aspect-square relative bg-dark-elevated overflow-hidden">
-              <Image src={m.thumb} alt={m.product} fill className="object-contain p-4 group-hover:scale-105 transition-transform duration-300" />
+              <Image src={m.thumb} alt={m.product} fill className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
               {m.exported && (
                 <div className="absolute top-2 right-2">
                   <Badge variant="gold">{m.format}</Badge>

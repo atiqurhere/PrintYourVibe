@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ShoppingBag, Menu, X, User, ChevronRight } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
@@ -17,6 +18,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const itemCount = useCartStore((s) => s.itemCount());
+  const pathname = usePathname();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 40);
@@ -88,11 +90,13 @@ export default function Navbar() {
                     <User size={15} /> Sign In
                   </Button>
                 </Link>
-                <Link href="/mockup">
-                  <Button variant="primary" size="sm">
-                    Start Designing
-                  </Button>
-                </Link>
+                {pathname !== '/mockup' && (
+                  <Link href="/mockup">
+                    <Button variant="primary" size="sm">
+                      Start Designing
+                    </Button>
+                  </Link>
+                )}
               </div>
 
               {/* Burger (mobile) */}

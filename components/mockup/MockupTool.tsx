@@ -8,8 +8,8 @@ import {
   Layers, GripVertical, ArrowUp, ArrowDown, AlignCenter,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getProducts } from "@/lib/supabase/queries";
-import type { Product } from "@/lib/supabase/queries";
+import { getProducts, getSettings } from "@/lib/supabase/queries";
+import type { Product, Settings } from "@/lib/supabase/queries";
 import { useMockupStore, type DesignLayer } from "@/stores/useMockupStore";
 import { useCartStore } from "@/stores/useCartStore";
 import { formatPrice } from "@/lib/utils";
@@ -110,11 +110,13 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
 
   // ── Products from Supabase ──────────────────────────────────────────────────
   const [products, setProducts] = useState<Product[]>([]);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
-    getProducts().then((ps) => {
+    Promise.all([getProducts(), getSettings()]).then(([ps, st]) => {
       setProducts(ps);
+      if (st) setSettings(st);
       setProductsLoading(false);
       // Set initial product if none selected
       if (ps.length > 0 && !store.productId) {
@@ -176,7 +178,7 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
   }
 
   // ── Draw (with snap guide lines) ──────────────────────────────────────────
-  const draw = useCallback((guides?: { x: boolean; y: boolean }) => {
+  const draw = useCallback((guides?: { x: boolean; y: boolean }, options?: { hideSelection?: boolean }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -209,7 +211,7 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
       }
 
       // ── Selection outline + handles ──────────────────────────────────────
-      if (layer.isSelected) {
+      if (layer.isSelected && !options?.hideSelection) {
         ctx.restore();
         ctx.save();
 
@@ -611,31 +613,116 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
   };
 
   // ── Export ────────────────────────────────────────────────────────────────
-  const handleExport = (format: "png" | "jpg" | "pdf") => {
+  const handleExport = (format: "png" | "jpg" | "webp") => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = `printyourvibe-design.${format === "pdf" ? "png" : format}`;
-    link.href = canvas.toDataURL(format === "jpg" ? "image/jpeg" : "image/png", 0.92);
-    link.click();
+
+    // Create a temporary offscreen canvas for compositing the mockup + design
+    const compositeCanvas = document.createElement("canvas");
+    compositeCanvas.width = canvas.width;
+    compositeCanvas.height = canvas.height;
+    const ctx = compositeCanvas.getContext("2d");
+    if (!ctx) return;
+
+    // Fill white background for JPG
+    if (format === "jpg") {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+    }
+
+    const finishAndDownload = () => {
+      // Temporarily redraw canvas without selection markers
+      draw(undefined, { hideSelection: true });
+      ctx.drawImage(canvas, 0, 0);
+
+      const doDownload = () => {
+        const mimeType = format === "jpg" ? "image/jpeg" : format === "webp" ? "image/webp" : "image/png";
+        const link = document.createElement("a");
+        link.download = `printyourvibe-mockup.${format}`;
+        link.href = compositeCanvas.toDataURL(mimeType, 0.92);
+        link.click();
+        draw(); // restore selection UI
+      };
+
+      // Composite Watermark if setting exists
+      if (settings?.watermark_image_url) {
+        const wm = new window.Image();
+        wm.crossOrigin = "anonymous";
+        wm.onload = () => {
+          const targetW = compositeCanvas.width * 0.15;
+          const targetH = compositeCanvas.height * 0.15;
+          const wmRatio = Math.min(targetW / wm.width, targetH / wm.height);
+          const wmW = wm.width * wmRatio;
+          const wmH = wm.height * wmRatio;
+          const pad = 20;
+          ctx.globalAlpha = 1.0;
+          ctx.drawImage(wm, compositeCanvas.width - wmW - pad, compositeCanvas.height - wmH - pad, wmW, wmH);
+          doDownload();
+        };
+        wm.onerror = () => {
+          // Fallback to text watermark if image load fails for CORS/invalid reasons
+          if (settings?.watermark_text) {
+             ctx.font = "bold 14px sans-serif";
+             ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+             ctx.textAlign = "right";
+             ctx.fillText(settings.watermark_text, compositeCanvas.width - 20, compositeCanvas.height - 20);
+          }
+          doDownload();
+        };
+        wm.src = settings.watermark_image_url + "?cb=" + Date.now(); // Bypass any browser cross-origin cache
+      } else if (settings?.watermark_text) {
+        ctx.font = "bold 14px sans-serif";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+        ctx.textAlign = "right";
+        ctx.fillText(settings.watermark_text, compositeCanvas.width - 20, compositeCanvas.height - 20);
+        doDownload();
+      } else {
+        doDownload();
+      }
+    };
+
+    // Load and draw the base shirt image first
+    if (baseImage) {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous"; // prevent tainting
+      img.onload = () => {
+        const ratio = Math.min(compositeCanvas.width / img.width, compositeCanvas.height / img.height);
+        const w = img.width * ratio;
+        const h = img.height * ratio;
+        const x = (compositeCanvas.width - w) / 2;
+        const y = (compositeCanvas.height - h) / 2;
+        ctx.drawImage(img, x, y, w, h);
+        finishAndDownload();
+      };
+      img.onerror = () => finishAndDownload(); // fallback
+      img.src = baseImage;
+    } else {
+      finishAndDownload();
+    }
   };
 
   // ── Add to cart ───────────────────────────────────────────────────────────
   const handleAddToCart = () => {
     if (!currentColour) return;
-    addToCart({
-      id: `${currentProduct.id}-${currentColour.id}-${store.selectedSize}-${Date.now()}`,
-      productId: currentProduct.id,
-      productName: currentProduct.name,
-      productSlug: currentProduct.slug,
-      colour: currentColour.name,
-      colourHex: currentColour.hex,
-      size: store.selectedSize,
-      quantity: 1,
-      unitPrice: currentProduct.base_price,
-      thumbnailUrl: baseImage,
-      mockupSessionId: store.sessionId || undefined,
-    });
+    draw(undefined, { hideSelection: true });
+    
+    // Slight delay to allow canvas painting
+    setTimeout(() => {
+      addToCart({
+        id: `${currentProduct.id}-${currentColour.id}-${store.selectedSize}-${Date.now()}`,
+        productId: currentProduct.id,
+        productName: currentProduct.name,
+        productSlug: currentProduct.slug,
+        colour: currentColour.name,
+        colourHex: currentColour.hex,
+        size: store.selectedSize,
+        quantity: 1,
+        unitPrice: currentProduct.base_price,
+        thumbnailUrl: canvasRef.current?.toDataURL() || baseImage,
+        mockupSessionId: store.sessionId || undefined,
+      });
+      draw();
+    }, 50);
   };
 
   const selectedLayer = store.layers.find((l) => l.id === store.selectedLayerId);
@@ -1110,7 +1197,7 @@ export default function MockupToolPage({ initialProductSlug }: { initialProductS
                   Sign in for a watermark-free download and to save your design to your account.
                 </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["png", "jpg", "pdf"] as const).map((fmt) => (
+                  {(["png", "jpg", "webp"] as const).map((fmt) => (
                     <button
                       key={fmt}
                       onClick={() => handleExport(fmt)}

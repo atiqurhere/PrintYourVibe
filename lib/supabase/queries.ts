@@ -87,12 +87,24 @@ export interface Coupon {
 export interface Testimonial {
   id: string; name: string; location: string | null; rating: number;
   body: string; avatar: string | null; product_name: string | null; sort_order: number;
+  published?: boolean;
+}
+
+export interface ContentBlock {
+  id: string;
+  section: "how_it_works" | "trust_bar";
+  sort_order: number;
+  icon: string | null;
+  title: string | null;
+  description: string | null;
+  active: boolean;
+  updated_at: string;
 }
 
 export interface Settings {
   id: string; store_name: string; support_email: string; support_phone: string;
   std_shipping: number; express_shipping: number; free_threshold: number;
-  watermark_text: string; notification_events: string[];
+  watermark_text: string; watermark_image_url?: string; notification_events: string[];
 }
 
 export interface Profile {
@@ -226,6 +238,67 @@ export async function deleteCoupon(id: string, client = db): Promise<void> {
 export async function getTestimonials(): Promise<Testimonial[]> {
   const { data } = await db.from("testimonials").select("*").eq("published", true).order("sort_order");
   return (data ?? []) as Testimonial[];
+}
+
+export async function getAllTestimonials(client = db): Promise<Testimonial[]> {
+  const { data } = await client.from("testimonials").select("*").order("sort_order");
+  return (data ?? []) as Testimonial[];
+}
+
+export async function upsertTestimonial(
+  t: Omit<Testimonial, "sort_order"> & { sort_order?: number },
+  client = db
+): Promise<void> {
+  await client.from("testimonials").upsert(t);
+}
+
+export async function deleteTestimonial(id: string, client = db): Promise<void> {
+  await client.from("testimonials").delete().eq("id", id);
+}
+
+// ── Content Blocks (DB-driven landing page content) ───────────────────────
+// Replaces hardcoded howItWorks + trustItems arrays in app/page.tsx
+
+export async function getHowItWorks(): Promise<ContentBlock[]> {
+  const { data } = await db
+    .from("content_blocks")
+    .select("*")
+    .eq("section", "how_it_works")
+    .eq("active", true)
+    .order("sort_order");
+  return (data ?? []) as ContentBlock[];
+}
+
+export async function getTrustItems(): Promise<ContentBlock[]> {
+  const { data } = await db
+    .from("content_blocks")
+    .select("*")
+    .eq("section", "trust_bar")
+    .eq("active", true)
+    .order("sort_order");
+  return (data ?? []) as ContentBlock[];
+}
+
+export async function getAllContentBlocks(client = db): Promise<ContentBlock[]> {
+  const { data } = await client
+    .from("content_blocks")
+    .select("*")
+    .order("section")
+    .order("sort_order");
+  return (data ?? []) as ContentBlock[];
+}
+
+export async function upsertContentBlock(
+  block: Partial<ContentBlock> & { id: string },
+  client = db
+): Promise<void> {
+  await client
+    .from("content_blocks")
+    .upsert({ ...block, updated_at: new Date().toISOString() });
+}
+
+export async function deleteContentBlock(id: string, client = db): Promise<void> {
+  await client.from("content_blocks").delete().eq("id", id);
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────

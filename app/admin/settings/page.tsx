@@ -1,10 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Save, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Card, CardContent } from "@/components/ui/Card";
 import { supabase } from "@/lib/supabase/client";
+import Image from "next/image";
+import { Upload } from "lucide-react";
 
 const NOTIFICATION_EVENTS = [
   "New order placed",
@@ -32,6 +34,36 @@ export default function AdminSettingsPage() {
 
   // Mockup
   const [watermark, setWatermark] = useState("PrintYourVibe.co.uk");
+  const [watermarkImageUrl, setWatermarkImageUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing settings on mount
+  useEffect(() => {
+    supabase.from("settings").select("*").eq("id", "global").single().then(({ data }) => {
+      if (data) {
+        if (data.store_name) setStoreName(data.store_name);
+        if (data.support_email) setSupportEmail(data.support_email);
+        if (data.support_phone) setSupportPhone(data.support_phone);
+        if (data.std_shipping) setStdRate(data.std_shipping.toString());
+        if (data.express_shipping) setExpressRate(data.express_shipping.toString());
+        if (data.free_threshold) setFreeThreshold(data.free_threshold.toString());
+        if (data.watermark_text) setWatermark(data.watermark_text);
+        if (data.watermark_image_url) setWatermarkImageUrl(data.watermark_image_url);
+        if (data.notification_events) setNotifs(data.notification_events);
+      }
+    });
+  }, []);
+
+  const handleWatermarkUpload = async (file: File) => {
+    setSaving(true);
+    const path = `watermarks/wm-${Date.now()}.${file.name.split(".").pop()}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: true, contentType: file.type });
+    if (!error) {
+      const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
+      setWatermarkImageUrl(publicUrl);
+    }
+    setSaving(false);
+  };
 
   // Notifications
   const [notifs, setNotifs] = useState<string[]>(NOTIFICATION_EVENTS);
@@ -51,6 +83,7 @@ export default function AdminSettingsPage() {
         express_shipping: parseFloat(expressRate),
         free_threshold: parseFloat(freeThreshold),
         watermark_text: watermark,
+        watermark_image_url: watermarkImageUrl || null,
         notification_events: notifs,
       });
     } catch { /* Settings table may not exist yet – that's OK */ }
@@ -98,7 +131,35 @@ export default function AdminSettingsPage() {
         <Card>
           <CardContent>
             <h2 className="font-heading text-cream font-semibold mb-5">Mockup Tool</h2>
-            <Input id="s-wm" label="Watermark Text (shown on anonymous preview exports)" value={watermark} onChange={(e) => setWatermark(e.target.value)} />
+            <div className="space-y-4">
+              <Input id="s-wm" label="Watermark Text (Fallback)" value={watermark} onChange={(e) => setWatermark(e.target.value)} />
+              <div>
+                <p className="font-label text-xs uppercase text-cream-faint mb-2">Watermark Image (Corner overlay)</p>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-40 h-40 border-2 border-dashed border-gold/20 rounded-xl flex items-center justify-center cursor-pointer hover:border-gold/50 bg-dark-elevated transition-colors relative overflow-hidden"
+                >
+                  {watermarkImageUrl ? (
+                    <Image src={watermarkImageUrl} alt="Watermark" fill className="object-contain p-4 mix-blend-screen" />
+                  ) : (
+                    <div className="text-center">
+                      <Upload size={20} className="text-gold/50 mx-auto mb-2" />
+                      <span className="text-xs text-cream-muted font-label uppercase">Upload</span>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleWatermarkUpload(file);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
