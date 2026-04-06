@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function AuthCallback() {
       // --- Wait for the auth state to settle (handles both PKCE and implicit/hash flows) ---
       // onAuthStateChange fires as soon as Supabase detects a valid session
       // (including from a #access_token= hash on first render)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
         if (!mounted) return;
         if (event === "SIGNED_IN" && session) {
           subscription.unsubscribe();
@@ -51,7 +52,7 @@ export default function AuthCallback() {
       setTimeout(() => {
         if (!mounted) return;
         subscription.unsubscribe();
-        supabase.auth.getSession().then(({ data: d }) => {
+        supabase.auth.getSession().then(({ data: d }: { data: { session: Session | null } }) => {
           if (d?.session) {
             const role = d.session.user?.user_metadata?.role;
             router.replace(role === "admin" ? "/admin" : next);
