@@ -25,7 +25,7 @@ export default function AdminCouponsPage() {
 
   useEffect(() => {
     supabase.from("coupons").select("*").order("created_at", { ascending: false })
-      .then(({ data }) => { setCoupons((data ?? []) as Coupon[]); setLoading(false); });
+      .then(({ data }: { data: Coupon[] | null }) => { setCoupons((data ?? []) as Coupon[]); setLoading(false); });
   }, []);
 
   const toggleActive = async (id: string, current: boolean) => {
