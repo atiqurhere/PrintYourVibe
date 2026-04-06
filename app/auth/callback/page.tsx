@@ -11,33 +11,56 @@ export default function AuthCallback() {
     let mounted = true;
 
     async function handleAuth() {
-      // 1. Check for PKCE secure code in the query params
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      
+      // Determine intended destination from the 'next' or 'redirect' query param
+      const searchParams = new URLSearchParams(window.location.search);
+      const next = searchParams.get("next") || searchParams.get("redirect") || "/dashboard";
+      const code = searchParams.get("code");
+
+      // --- PKCE flow: exchange the code for a session ---
       if (code) {
-        // Exchange the code for a session explicitly
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-           console.error("Auth Exchange Error:", error.message);
-           if (mounted) setErrorMsg(`Secure verification failed: ${error.message}`);
-           return;
+          console.error("PKCE exchange error:", error.message);
+          if (mounted) setErrorMsg(`Sign-in failed: ${error.message}`);
+          return;
         }
       }
 
-      // 2. The session should now be active locally 
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      
-      if (data?.session) {
-        const role = data.session?.user?.user_metadata?.role;
-        router.push(role === "admin" ? "/admin" : "/dashboard");
-      } else {
-        console.error("No session found after callback", sessionError);
-        if (mounted) setErrorMsg("Verification failed: Session could not be established. Redirecting...");
-        setTimeout(() => {
-          if (mounted) router.push("/login?error=verification_failed");
-        }, 3000);
+      // --- Wait for the auth state to settle (handles both PKCE and implicit/hash flows) ---
+      // onAuthStateChange fires as soon as Supabase detects a valid session
+      // (including from a #access_token= hash on first render)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!mounted) return;
+        if (event === "SIGNED_IN" && session) {
+          subscription.unsubscribe();
+          const role = session.user?.user_metadata?.role;
+          router.replace(role === "admin" ? "/admin" : next);
+        }
+      });
+
+      // Fallback: check if session already exists right now (race condition safety)
+      const { data } = await supabase.auth.getSession();
+      if (data?.session && mounted) {
+        subscription.unsubscribe();
+        const role = data.session.user?.user_metadata?.role;
+        router.replace(role === "admin" ? "/admin" : next);
+        return;
       }
+
+      // Final timeout: if nothing happens after 8s, something is wrong
+      setTimeout(() => {
+        if (!mounted) return;
+        subscription.unsubscribe();
+        supabase.auth.getSession().then(({ data: d }) => {
+          if (d?.session) {
+            const role = d.session.user?.user_metadata?.role;
+            router.replace(role === "admin" ? "/admin" : next);
+          } else {
+            if (mounted) setErrorMsg("Sign-in timed out. Please try again.");
+            setTimeout(() => { if (mounted) router.replace("/login?error=timeout"); }, 3000);
+          }
+        });
+      }, 8000);
     }
 
     handleAuth();
